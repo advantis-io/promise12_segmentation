@@ -7,6 +7,8 @@ Created on Fri Sep 15 17:18:38 2017
 """
 
 from __future__ import division, print_function
+
+import logging
 from collections import defaultdict
 import os, pickle, sys
 import shutil
@@ -23,33 +25,44 @@ from scipy.misc import imresize
 from skimage.transform import resize
 from skimage.exposure import equalize_adapthist, equalize_hist
 
+from logging_writer import LoggingWriter
 from models import *
 from metrics import dice_coef, dice_coef_loss
 from augmenters import *
+from print_graph import plot_learning_performance
+
+def start_logging():
+    logging.basicConfig(
+        format="%(asctime)s [%(threadName)-12.12s] [%(filename)-15.15s] [%(levelname)-8s]  %(message)s",
+        handlers=[
+            logging.FileHandler("app.log"),
+            logging.StreamHandler()
+        ],
+        level=logging.INFO
+    )
 
 def img_resize(imgs, img_rows, img_cols, equalize=True):
-
     new_imgs = np.zeros([len(imgs), img_rows, img_cols])
     for mm, img in enumerate(imgs):
         if equalize:
-            img = equalize_adapthist( img, clip_limit=0.05 )
+            img = equalize_adapthist(img, clip_limit=0.05)
             # img = clahe.apply(cv2.convertScaleAbs(img))
 
-        new_imgs[mm] = cv2.resize( img, (img_rows, img_cols), interpolation=cv2.INTER_NEAREST )
+        new_imgs[mm] = cv2.resize(img, (img_rows, img_cols), interpolation=cv2.INTER_NEAREST)
 
     return new_imgs
 
+
 def data_to_array(img_rows, img_cols):
+    clahe = cv2.createCLAHE(clipLimit=0.05, tileGridSize=(int(img_rows / 8), int(img_cols / 8)))
 
-    clahe = cv2.createCLAHE(clipLimit=0.05, tileGridSize=(int(img_rows/8),int(img_cols/8)) )
-
-    fileList =  os.listdir('../data/train/')
+    fileList = os.listdir('../data/train/')
     fileList = sorted(filter(lambda x: '.mhd' in x, fileList))
 
-    val_list = [5,15,25,35,45]
-    train_list = list( set(range(50)) - set(val_list) )
+    val_list = [5, 15, 25, 35, 45]
+    train_list = list(set(range(50)) - set(val_list))
     count = 0
-    for the_list in [train_list,  val_list]:
+    for the_list in [train_list, val_list]:
         images = []
         masks = []
 
@@ -58,76 +71,74 @@ def data_to_array(img_rows, img_cols):
         for filename in filtered:
             print("Working on {}".format(filename))
 
-            itkimage = sitk.ReadImage('../data/train/'+filename)
+            itkimage = sitk.ReadImage('../data/train/' + filename)
             imgs = sitk.GetArrayFromImage(itkimage)
 
             if 'segm' in filename.lower():
-                imgs= img_resize(imgs, img_rows, img_cols, equalize=False)
-                masks.append( imgs )
+                imgs = img_resize(imgs, img_rows, img_cols, equalize=False)
+                masks.append(imgs)
 
             else:
                 imgs = img_resize(imgs, img_rows, img_cols, equalize=True)
-                images.append(imgs )
+                images.append(imgs)
 
-        images = np.concatenate( images , axis=0 ).reshape(-1, img_rows, img_cols, 1)
+        images = np.concatenate(images, axis=0).reshape(-1, img_rows, img_cols, 1)
         masks = np.concatenate(masks, axis=0).reshape(-1, img_rows, img_cols, 1)
         masks = masks.astype(int)
 
-        #Smooth images using CurvatureFlow
+        # Smooth images using CurvatureFlow
         images = smooth_images(images)
 
-        if count==0:
+        if count == 0:
             mu = np.mean(images)
             sigma = np.std(images)
-            images = (images - mu)/sigma
+            images = (images - mu) / sigma
 
             np.save('../data/X_train.npy', images)
             np.save('../data/y_train.npy', masks)
-        elif count==1:
-            images = (images - mu)/sigma
+        elif count == 1:
+            images = (images - mu) / sigma
 
             np.save('../data/X_val.npy', images)
             np.save('../data/y_val.npy', masks)
-        count+=1
+        count += 1
 
-    fileList =  os.listdir('../data/test/')
+    fileList = os.listdir('../data/test/')
     fileList = sorted(filter(lambda x: '.mhd' in x, fileList))
 
-    n_imgs=[]
-    images=[]
+    n_imgs = []
+    images = []
     for filename in fileList:
         print("Working on {}".format(filename))
-        itkimage = sitk.ReadImage('../data/test/'+filename)
+        itkimage = sitk.ReadImage('../data/test/' + filename)
         imgs = sitk.GetArrayFromImage(itkimage)
         imgs = img_resize(imgs, img_rows, img_cols, equalize=True)
         images.append(imgs)
-        n_imgs.append( len(imgs) )
+        n_imgs.append(len(imgs))
 
-    images = np.concatenate( images , axis=0 ).reshape(-1, img_rows, img_cols, 1)
+    images = np.concatenate(images, axis=0).reshape(-1, img_rows, img_cols, 1)
     images = smooth_images(images)
-    images = (images - mu)/sigma
+    images = (images - mu) / sigma
     np.save('../data/X_test.npy', images)
-    np.save('../data/test_n_imgs.npy', np.array(n_imgs) )
+    np.save('../data/test_n_imgs.npy', np.array(n_imgs))
 
 
 def load_data():
-
     X_train = np.load('../data/X_train.npy')
     y_train = np.load('../data/y_train.npy')
     X_val = np.load('../data/X_val.npy')
     y_val = np.load('../data/y_val.npy')
 
-
     return X_train, y_train, X_val, y_val
 
 
 def augment_validation_data(X_train, y_train, seed=10):
-
     img_rows = X_train.shape[1]
-    img_cols =  X_train.shape[2]
+    img_cols = X_train.shape[2]
 
     x, y = np.meshgrid(np.arange(img_rows), np.arange(img_cols), indexing='ij')
-    elastic = partial(elastic_transform, x=x, y=y, alpha=img_rows*1.5, sigma=img_rows*0.07 )
+    elastic = partial(elastic_transform, x=x, y=y, alpha=img_rows * 1.5, sigma=img_rows * 0.07)
+
     # we create two instances with the same arguments
     data_gen_args = dict(preprocessing_function=elastic)
 
@@ -142,16 +153,16 @@ def augment_validation_data(X_train, y_train, seed=10):
 
     train_generator = zip(image_generator, mask_generator)
 
-    count=0
+    count = 0
     X_val = []
     y_val = []
 
     for X_batch, y_batch in train_generator:
 
-        if count==5:
+        if count == 5:
             break
 
-        count+=1
+        count += 1
 
         X_val.append(X_batch)
         y_val.append(y_batch)
@@ -161,21 +172,20 @@ def augment_validation_data(X_train, y_train, seed=10):
     return X_val, y_val
 
 
-def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10**4, batch_size=32, regenerate=True):
-
+def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32, regenerate=True):
     if regenerate:
         data_to_array(img_rows, img_cols)
-        #preprocess_data()
+        # preprocess_data()
 
     X_train, y_train, X_val, y_val = load_data()
     # X_val, y_val = augment_validation_data(X_val, y_val, seed=10)
     img_rows = X_train.shape[1]
-    img_cols =  X_train.shape[2]
+    img_cols = X_train.shape[2]
 
     # Provide the same seed and keyword arguments to the fit and flow methods
 
     x, y = np.meshgrid(np.arange(img_rows), np.arange(img_cols), indexing='ij')
-    elastic = partial(elastic_transform, x=x, y=y, alpha=img_rows*1.5, sigma=img_rows*0.07 )
+    elastic = partial(elastic_transform, x=x, y=y, alpha=img_rows * 1.5, sigma=img_rows * 0.07)
     # we create two instances with the same arguments
     data_gen_args = dict(
         featurewise_center=False,
@@ -199,40 +209,46 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10**4, batch_size=32, r
     mask_generator = mask_datagen.flow(y_train, batch_size=batch_size, seed=seed)
     train_generator = zip(image_generator, mask_generator)
 
-    model = UNet((img_rows, img_cols,1), start_ch=8, depth=7, batchnorm=True, dropout=0.5, maxpool=True, residual=True)
+    model = UNet((img_rows, img_cols, 1), start_ch=8, depth=7, batchnorm=True, dropout=0.5, maxpool=True, residual=True)
     # model.load_weights('../data/weights.h5')
-    model = multi_gpu_model(model, gpus=2)
+    # model = multi_gpu_model(model, gpus=2)
 
     model.summary()
     model_checkpoint = ModelCheckpoint(
         '../data/weights.h5', monitor='val_loss', save_best_only=True)
 
     c_backs = [model_checkpoint]
-    c_backs.append( EarlyStopping(monitor='loss', min_delta=0.001, patience=5) )
+    c_backs.append(EarlyStopping(monitor='loss', min_delta=0.001, patience=5))
+    c_backs.append(LoggingWriter())
 
-    model.compile(  optimizer=Adam(lr=0.001), loss=dice_coef_loss, metrics=[dice_coef])
+    model.compile(optimizer=Adam(lr=0.001), loss=dice_coef_loss, metrics=[dice_coef])
 
-    model.fit_generator(
-                        train_generator,
-                        steps_per_epoch=n_imgs//batch_size,
-                        epochs=20,
-                        verbose=1,
-                        shuffle=True,
-                        validation_data=(np.concatenate([X_val]), np.concatenate([y_val])),
-                        callbacks=c_backs,
-                        workers=12,
-                        use_multiprocessing=True)
+    history = model.fit_generator(
+        train_generator,
+        steps_per_epoch=n_imgs // batch_size,
+        epochs=20,
+        verbose=1,
+        shuffle=True,
+        validation_data=(X_val, y_val),
+        callbacks=c_backs,
+        workers=4,
+        use_multiprocessing=True)
+
+    plot_learning_performance(history, 'plot.png')
 
 
-
-if __name__=='__main__':
-
+if __name__ == '__main__':
     import time
 
+    start_logging()
     start = time.time()
-    keras_fit_generator(img_rows=256, img_cols=256, regenerate=False,
-                        n_imgs=10**4, batch_size=1)
+    #keras_fit_generator(img_rows=256, img_cols=256, regenerate=True,
+    #                    n_imgs=15*10**4, batch_size=32)
+
+    keras_fit_generator(img_rows=256, img_cols=256, regenerate=True,
+                       n_imgs=1000, batch_size=32)
+
 
     end = time.time()
 
-    print('Elapsed time:', round((end-start)/60, 2 ) )
+    logging.info('Elapsed time:', round((end - start) / 60, 2))
