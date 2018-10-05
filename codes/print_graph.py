@@ -13,7 +13,7 @@ def plot_learning_performance(history, experiment_file):
 
     _, axes = plt.subplots(nrows=2, ncols=1, sharex=True)
 
-    ax2 = axes[0, 0]
+    ax2 = axes[0]
     ax2.plot(epochs, history.history['loss'], label='Training')
     if with_validation:
         ax2.plot(epochs, history.history['val_loss'], label='Validation')
@@ -22,7 +22,7 @@ def plot_learning_performance(history, experiment_file):
     ax2.set_ylabel('Loss')
     ax2.legend()
 
-    ax4 = axes[1, 0]
+    ax4 = axes[1]
     ax4.set_ylim(ax2.get_ylim())
     ax4.plot(epochs, smooth_curve(history.history['loss']), label='Training')
     if with_validation:

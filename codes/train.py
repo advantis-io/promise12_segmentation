@@ -69,7 +69,7 @@ def data_to_array(img_rows, img_cols):
         filtered = filter(lambda x: any(str(ff).zfill(2) in x for ff in the_list), fileList)
 
         for filename in filtered:
-            print("Working on {}".format(filename))
+            logging.info("Working on {}".format(filename))
 
             itkimage = sitk.ReadImage('../data/train/' + filename)
             imgs = sitk.GetArrayFromImage(itkimage)
@@ -109,7 +109,7 @@ def data_to_array(img_rows, img_cols):
     n_imgs = []
     images = []
     for filename in fileList:
-        print("Working on {}".format(filename))
+        logging.info("Working on {}".format(filename))
         itkimage = sitk.ReadImage('../data/test/' + filename)
         imgs = sitk.GetArrayFromImage(itkimage)
         imgs = img_resize(imgs, img_rows, img_cols, equalize=True)
@@ -226,7 +226,7 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32,
     history = model.fit_generator(
         train_generator,
         steps_per_epoch=n_imgs // batch_size,
-        epochs=20,
+        epochs=5,
         verbose=1,
         shuffle=True,
         validation_data=(X_val, y_val),
