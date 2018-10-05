@@ -201,7 +201,7 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10**4, batch_size=32, r
 
     model = UNet((img_rows, img_cols,1), start_ch=8, depth=7, batchnorm=True, dropout=0.5, maxpool=True, residual=True)
     # model.load_weights('../data/weights.h5')
-    model = multi_gpu_model(model, gpus=3)
+    model = multi_gpu_model(model, gpus=2)
 
     model.summary()
     model_checkpoint = ModelCheckpoint(
@@ -220,7 +220,7 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10**4, batch_size=32, r
                         shuffle=True,
                         validation_data=(np.concatenate([X_val]), np.concatenate([y_val])),
                         callbacks=c_backs,
-                        workers=16,
+                        workers=12,
                         use_multiprocessing=True)
 
 
