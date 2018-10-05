@@ -218,7 +218,7 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10**4, batch_size=32, r
                         epochs=20,
                         verbose=1,
                         shuffle=True,
-                        validation_data=(np.concatenate([X_val]), np.concatenate([y_val]) ),
+                        validation_data=(np.concatenate([X_val]), np.concatenate([y_val])),
                         callbacks=c_backs,
                         workers=16,
                         use_multiprocessing=True)
@@ -231,7 +231,7 @@ if __name__=='__main__':
 
     start = time.time()
     keras_fit_generator(img_rows=256, img_cols=256, regenerate=False,
-                        n_imgs=15*10**4, batch_size=32)
+                        n_imgs=10**4, batch_size=32)
 
     end = time.time()
 
