@@ -99,3 +99,6 @@ fabric.properties
 # no MRI DATA!
 .mhd
 .raw
+
+# no data
+data/*
