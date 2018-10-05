@@ -226,12 +226,11 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32,
     history = model.fit_generator(
         train_generator,
         steps_per_epoch=n_imgs // batch_size,
-        epochs=5,
+        epochs=25,
         verbose=1,
         shuffle=True,
         validation_data=(X_val, y_val),
         callbacks=c_backs,
-        workers=4,
         use_multiprocessing=True)
 
     plot_learning_performance(history, 'plot.png')
@@ -245,13 +244,13 @@ if __name__ == '__main__':
 
     start_logging()
     start = time.time()
-    #keras_fit_generator(img_rows=256, img_cols=256, regenerate=True,
-    #                    n_imgs=15*10**4, batch_size=32)
-
     keras_fit_generator(img_rows=256, img_cols=256, regenerate=True,
-                       n_imgs=1000, batch_size=32)
+                        n_imgs=15*10**4, batch_size=32)
+
+    #keras_fit_generator(img_rows=256, img_cols=256, regenerate=True,
+    #                   n_imgs=1000, batch_size=32)
 
 
     end = time.time()
 
-    logging.info('Elapsed time:', round((end - start) / 60, 2))
+    logging.info('Elapsed time: {}'.format(round((end - start) / 60, 2)))
