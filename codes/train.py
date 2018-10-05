@@ -18,6 +18,7 @@ from keras.callbacks import ModelCheckpoint
 from keras.callbacks import LearningRateScheduler, EarlyStopping
 from keras.preprocessing.image import ImageDataGenerator
 import numpy as np
+from keras.utils import multi_gpu_model
 from scipy.misc import imresize
 from skimage.transform import resize
 from skimage.exposure import equalize_adapthist, equalize_hist
@@ -200,6 +201,7 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10**4, batch_size=32, r
 
     model = UNet((img_rows, img_cols,1), start_ch=8, depth=7, batchnorm=True, dropout=0.5, maxpool=True, residual=True)
     # model.load_weights('../data/weights.h5')
+    model = multi_gpu_model(model, gpus=3)
 
     model.summary()
     model_checkpoint = ModelCheckpoint(
@@ -216,8 +218,9 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10**4, batch_size=32, r
                         epochs=20,
                         verbose=1,
                         shuffle=True,
-                        validation_data=(np.concatenate([X_train,X_val]), np.concatenate([y_train,y_val]) ),
+                        validation_data=(np.concatenate([X_val]), np.concatenate([y_val]) ),
                         callbacks=c_backs,
+                        workers=16,
                         use_multiprocessing=True)
 
 
@@ -227,7 +230,7 @@ if __name__=='__main__':
     import time
 
     start = time.time()
-    keras_fit_generator(img_rows=256, img_cols=256, regenerate=True,
+    keras_fit_generator(img_rows=256, img_cols=256, regenerate=False,
                         n_imgs=15*10**4, batch_size=32)
 
     end = time.time()
