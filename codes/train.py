@@ -239,6 +239,9 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32,
 
 if __name__ == '__main__':
     import time
+    import os
+
+    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
     start_logging()
     start = time.time()
