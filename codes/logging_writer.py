@@ -1,7 +1,6 @@
 import logging
 
-from tensorflow.python.estimator import keras
-
+import keras
 
 class LoggingWriter(keras.callbacks.Callback):
     def on_train_begin(self, logs={}):
