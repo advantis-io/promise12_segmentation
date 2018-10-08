@@ -208,7 +208,7 @@ if __name__ == '__main__':
     start_logging()
     start = time.time()
     keras_fit_generator(img_rows=256, img_cols=256, regenerate=False,
-                        n_imgs=500, batch_size=32)
+                        n_imgs=15 * 10 ** 4, batch_size=32)
 
     # keras_fit_generator(img_rows=256, img_cols=256, regenerate=True,
     #                   n_imgs=1000, batch_size=32)
