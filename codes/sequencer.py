@@ -6,7 +6,7 @@ from keras_preprocessing.image import ImageDataGenerator
 
 
 class Sequencer(Sequence):
-    def __init__(self, X, y, batch_size, sequence_size=150, process_fn=None):
+    def __init__(self, X, y, batch_size, sequence_size, data_gen_args=None):
         """A `Sequence` implementation that can pre-process a mini-batch via `process_fn`
         Args:
             X: The numpy array of inputs.
@@ -18,9 +18,8 @@ class Sequencer(Sequence):
         self.X = X
         self.y = y
         self.batch_size = batch_size
-        self.process_fn = process_fn or (lambda x: x)
         self.sequence_encoding = random.sample(range(0, sequence_size), sequence_size)
-        self.imgaug = ImageDataGenerator(rotation_range=20, rescale=1 / 255., width_shift_range=10)
+        self.imgaug = ImageDataGenerator(data_gen_args)
 
     def __len__(self):
         return len(self.sequence_encoding) // self.batch_size

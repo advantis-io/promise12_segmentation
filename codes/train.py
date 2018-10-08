@@ -139,10 +139,6 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32,
     img_rows = X_train_raw.shape[1]
     img_cols = X_train_raw.shape[2]
 
-    training_sequence = Sequencer(X_train_raw, y_train_raw, batch_size)
-
-    # Provide the same seed and keyword arguments to the fit and flow methods
-
     x, y = np.meshgrid(np.arange(img_rows), np.arange(img_cols), indexing='ij')
     elastic = partial(elastic_transform, x=x, y=y, alpha=img_rows * 1.5, sigma=img_rows * 0.07)
     # we create two instances with the same arguments
@@ -157,6 +153,12 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32,
         zoom_range=[1, 1.2],
         fill_mode='constant',
         preprocessing_function=elastic)
+
+    training_sequence = Sequencer(X_train_raw, y_train_raw, sequence_size=n_imgs, batch_size=batch_size, datagen_args=data_gen_args)
+
+    # Provide the same seed and keyword arguments to the fit and flow methods
+
+
 
     #train_generator = DualImageGenerator(**data_gen_args)
     image_datagen = ImageDataGenerator(**data_gen_args)
