@@ -6,13 +6,13 @@ from keras_preprocessing.image import ImageDataGenerator
 
 
 class Sequencer(Sequence):
-    def __init__(self, X, y, batch_size, sequence_size, data_gen_args=None):
-        """A `Sequence` implementation that can pre-process a mini-batch via `process_fn`
-        Args:
+    def __init__(self, X, y, batch_size, sequence_size, data_gen_args):
+        """A `Sequence` implementation that can augment data
             X: The numpy array of inputs.
             y: The numpy array of targets.
             batch_size: The generator mini-batch size.
-            process_fn: The preprocessing function to apply on `X`
+            sequence_size: The number of elements in the sequence
+            data_gen_args: The arguments for the ImageDataGenerator to apply on X, y
         """
 
         self.X = X

@@ -129,7 +129,7 @@ def load_data():
     return X_train, y_train, X_val, y_val
 
 
-def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32, regenerate=True):
+def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32, regenerate=True, workers=1):
     if regenerate:
         data_to_array(img_rows, img_cols)
         # preprocess_data()
@@ -156,22 +156,6 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32,
 
     training_sequence = Sequencer(X_train_raw, y_train_raw, sequence_size=n_imgs, batch_size=batch_size, data_gen_args=data_gen_args)
 
-    # Provide the same seed and keyword arguments to the fit and flow methods
-
-
-
-    #train_generator = DualImageGenerator(**data_gen_args)
-    image_datagen = ImageDataGenerator(**data_gen_args)
-    mask_datagen = ImageDataGenerator(**data_gen_args)
-
-    #image_datagen.fit(X_train, seed=seed)
-    #mask_datagen.fit(y_train, seed=seed)
-    #image_generator = image_datagen.flow(X_train, batch_size=batch_size, seed=seed, save_to_dir='')
-    #mask_generator = mask_datagen.flow(y_train, batch_size=batch_size, seed=seed, save_to_dir='')
-    #train_generator = zip(image_generator, mask_generator)
-
-    #data_gen = train_generator.flow(sequence=training_sequence, batch_size=batch_size)
-
     model = UNet((img_rows, img_cols, 1), start_ch=8, depth=7, batchnorm=True, dropout=0.5, maxpool=True, residual=True)
     # model.load_weights('../data/weights.h5')
     # model = multi_gpu_model(model, gpus=2)
@@ -193,7 +177,7 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32,
         shuffle=True,
         validation_data=(X_val, y_val),
         callbacks=c_backs,
-        workers=8,
+        workers=workers,
         use_multiprocessing=True)
 
     plot_learning_performance(history, 'plot.png')
@@ -208,11 +192,7 @@ if __name__ == '__main__':
     start_logging()
     start = time.time()
     keras_fit_generator(img_rows=256, img_cols=256, regenerate=False,
-                        n_imgs=15 * 10 ** 4, batch_size=32)
-
-    # keras_fit_generator(img_rows=256, img_cols=256, regenerate=True,
-    #                   n_imgs=1000, batch_size=32)
-
+                        n_imgs=15 * 10 ** 4, batch_size=32, workers=12)
 
     end = time.time()
 
