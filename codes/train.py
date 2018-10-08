@@ -13,15 +13,18 @@ from functools import partial
 
 from keras.callbacks import EarlyStopping
 from keras.callbacks import ModelCheckpoint
+from keras.datasets import imdb
 from keras.optimizers import Adam
 from keras.preprocessing.image import ImageDataGenerator
 from skimage.exposure import equalize_adapthist
 
 from augmenters import *
+from dual_image_datagenerator import DualImageGenerator
 from logging_writer import LoggingWriter
 from metrics import dice_coef, dice_coef_loss
 from models import *
 from print_graph import plot_learning_performance
+from sequencer import Sequencer
 
 
 def start_logging():
@@ -131,10 +134,12 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32,
         data_to_array(img_rows, img_cols)
         # preprocess_data()
 
-    X_train, y_train, X_val, y_val = load_data()
+    X_train_raw, y_train_raw, X_val, y_val = load_data()
 
-    img_rows = X_train.shape[1]
-    img_cols = X_train.shape[2]
+    img_rows = X_train_raw.shape[1]
+    img_cols = X_train_raw.shape[2]
+
+    training_sequence = Sequencer(X_train_raw, y_train_raw, batch_size)
 
     # Provide the same seed and keyword arguments to the fit and flow methods
 
@@ -153,15 +158,17 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32,
         fill_mode='constant',
         preprocessing_function=elastic)
 
+    #train_generator = DualImageGenerator(**data_gen_args)
     image_datagen = ImageDataGenerator(**data_gen_args)
     mask_datagen = ImageDataGenerator(**data_gen_args)
 
-    seed = 2
     #image_datagen.fit(X_train, seed=seed)
     #mask_datagen.fit(y_train, seed=seed)
-    image_generator = image_datagen.flow(X_train, batch_size=batch_size, seed=seed)
-    mask_generator = mask_datagen.flow(y_train, batch_size=batch_size, seed=seed)
-    train_generator = zip(image_generator, mask_generator)
+    #image_generator = image_datagen.flow(X_train, batch_size=batch_size, seed=seed, save_to_dir='')
+    #mask_generator = mask_datagen.flow(y_train, batch_size=batch_size, seed=seed, save_to_dir='')
+    #train_generator = zip(image_generator, mask_generator)
+
+    #data_gen = train_generator.flow(sequence=training_sequence, batch_size=batch_size)
 
     model = UNet((img_rows, img_cols, 1), start_ch=8, depth=7, batchnorm=True, dropout=0.5, maxpool=True, residual=True)
     # model.load_weights('../data/weights.h5')
@@ -178,9 +185,7 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32,
     model.compile(optimizer=Adam(lr=0.001), loss=dice_coef_loss, metrics=[dice_coef])
 
     history = model.fit_generator(
-        train_generator,
-        steps_per_epoch=n_imgs // batch_size,
-
+        training_sequence,
         epochs=25,
         verbose=1,
         shuffle=True,
@@ -201,7 +206,7 @@ if __name__ == '__main__':
     start_logging()
     start = time.time()
     keras_fit_generator(img_rows=256, img_cols=256, regenerate=False,
-                        n_imgs=15 * 10 ** 4, batch_size=32)
+                        n_imgs=500, batch_size=8)
 
     # keras_fit_generator(img_rows=256, img_cols=256, regenerate=True,
     #                   n_imgs=1000, batch_size=32)
