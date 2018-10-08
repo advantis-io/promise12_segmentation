@@ -154,7 +154,7 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32,
         fill_mode='constant',
         preprocessing_function=elastic)
 
-    training_sequence = Sequencer(X_train_raw, y_train_raw, sequence_size=n_imgs, batch_size=batch_size, datagen_args=data_gen_args)
+    training_sequence = Sequencer(X_train_raw, y_train_raw, sequence_size=n_imgs, batch_size=batch_size, data_gen_args=data_gen_args)
 
     # Provide the same seed and keyword arguments to the fit and flow methods
 
@@ -208,7 +208,7 @@ if __name__ == '__main__':
     start_logging()
     start = time.time()
     keras_fit_generator(img_rows=256, img_cols=256, regenerate=False,
-                        n_imgs=500, batch_size=8)
+                        n_imgs=500, batch_size=32)
 
     # keras_fit_generator(img_rows=256, img_cols=256, regenerate=True,
     #                   n_imgs=1000, batch_size=32)
