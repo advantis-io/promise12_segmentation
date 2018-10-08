@@ -3,33 +3,26 @@
 """
 Created on Fri Sep 15 17:18:38 2017
 
-@author: Inom Mirzaev
+@author: Inom Mirzaev / Martin Stypinski
 """
 
 from __future__ import division, print_function
 
 import logging
-from collections import defaultdict
-import os, pickle, sys
-import shutil
 from functools import partial
 
-import cv2
-from keras.optimizers import Adam, SGD
+from keras.callbacks import EarlyStopping
 from keras.callbacks import ModelCheckpoint
-from keras.callbacks import LearningRateScheduler, EarlyStopping
+from keras.optimizers import Adam
 from keras.preprocessing.image import ImageDataGenerator
-import numpy as np
-from keras.utils import multi_gpu_model
-from scipy.misc import imresize
-from skimage.transform import resize
-from skimage.exposure import equalize_adapthist, equalize_hist
+from skimage.exposure import equalize_adapthist
 
-from logging_writer import LoggingWriter
-from models import *
-from metrics import dice_coef, dice_coef_loss
 from augmenters import *
+from logging_writer import LoggingWriter
+from metrics import dice_coef, dice_coef_loss
+from models import *
 from print_graph import plot_learning_performance
+
 
 def start_logging():
     logging.basicConfig(
@@ -40,6 +33,7 @@ def start_logging():
         ],
         level=logging.INFO
     )
+
 
 def img_resize(imgs, img_rows, img_cols, equalize=True):
     new_imgs = np.zeros([len(imgs), img_rows, img_cols])
@@ -132,53 +126,13 @@ def load_data():
     return X_train, y_train, X_val, y_val
 
 
-def augment_validation_data(X_train, y_train, seed=10):
-    img_rows = X_train.shape[1]
-    img_cols = X_train.shape[2]
-
-    x, y = np.meshgrid(np.arange(img_rows), np.arange(img_cols), indexing='ij')
-    elastic = partial(elastic_transform, x=x, y=y, alpha=img_rows * 1.5, sigma=img_rows * 0.07)
-
-    # we create two instances with the same arguments
-    data_gen_args = dict(preprocessing_function=elastic)
-
-    image_datagen = ImageDataGenerator(**data_gen_args)
-    mask_datagen = ImageDataGenerator(**data_gen_args)
-
-    image_datagen.fit(X_train, seed=seed)
-    mask_datagen.fit(y_train, seed=seed)
-
-    image_generator = image_datagen.flow(X_train, batch_size=100, seed=seed)
-    mask_generator = mask_datagen.flow(y_train, batch_size=100, seed=seed)
-
-    train_generator = zip(image_generator, mask_generator)
-
-    count = 0
-    X_val = []
-    y_val = []
-
-    for X_batch, y_batch in train_generator:
-
-        if count == 5:
-            break
-
-        count += 1
-
-        X_val.append(X_batch)
-        y_val.append(y_batch)
-
-    X_val = np.concatenate(X_val, axis=0)
-    y_val = np.concatenate(y_val, axis=0)
-    return X_val, y_val
-
-
 def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32, regenerate=True):
     if regenerate:
         data_to_array(img_rows, img_cols)
         # preprocess_data()
 
     X_train, y_train, X_val, y_val = load_data()
-    # X_val, y_val = augment_validation_data(X_val, y_val, seed=10)
+
     img_rows = X_train.shape[1]
     img_cols = X_train.shape[2]
 
@@ -203,8 +157,8 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32,
     mask_datagen = ImageDataGenerator(**data_gen_args)
 
     seed = 2
-    image_datagen.fit(X_train, seed=seed)
-    mask_datagen.fit(y_train, seed=seed)
+    #image_datagen.fit(X_train, seed=seed)
+    #mask_datagen.fit(y_train, seed=seed)
     image_generator = image_datagen.flow(X_train, batch_size=batch_size, seed=seed)
     mask_generator = mask_datagen.flow(y_train, batch_size=batch_size, seed=seed)
     train_generator = zip(image_generator, mask_generator)
@@ -226,6 +180,7 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32,
     history = model.fit_generator(
         train_generator,
         steps_per_epoch=n_imgs // batch_size,
+
         epochs=25,
         verbose=1,
         shuffle=True,
@@ -244,10 +199,10 @@ if __name__ == '__main__':
 
     start_logging()
     start = time.time()
-    keras_fit_generator(img_rows=256, img_cols=256, regenerate=True,
-                        n_imgs=15*10**4, batch_size=32)
+    keras_fit_generator(img_rows=256, img_cols=256, regenerate=False,
+                        n_imgs=15 * 10 ** 4, batch_size=32)
 
-    #keras_fit_generator(img_rows=256, img_cols=256, regenerate=True,
+    # keras_fit_generator(img_rows=256, img_cols=256, regenerate=True,
     #                   n_imgs=1000, batch_size=32)
 
 
