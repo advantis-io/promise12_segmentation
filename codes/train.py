@@ -180,8 +180,8 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32,
         workers=workers,
         use_multiprocessing=True)
 
+    logging.info(history)
     plot_learning_performance(history, 'plot.png')
-    model.save("../data/weights.h5")
 
 
 if __name__ == '__main__':
