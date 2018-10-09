@@ -16,12 +16,14 @@ from keras.callbacks import ModelCheckpoint
 from keras.datasets import imdb
 from keras.optimizers import Adam
 from keras.preprocessing.image import ImageDataGenerator
+from keras.utils import multi_gpu_model
 from skimage.exposure import equalize_adapthist
 
 from augmenters import *
 from dual_image_datagenerator import DualImageGenerator
 from logging_writer import LoggingWriter
 from metrics import dice_coef, dice_coef_loss
+from model_mgpu import ModelMGPU
 from models import *
 from print_graph import plot_learning_performance
 from sequencer import Sequencer
@@ -156,9 +158,9 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32,
 
     training_sequence = Sequencer(X_train_raw, y_train_raw, sequence_size=n_imgs, batch_size=batch_size, data_gen_args=data_gen_args)
 
-    model = UNet((img_rows, img_cols, 1), start_ch=8, depth=7, batchnorm=True, dropout=0.5, maxpool=True, residual=True)
-    # model.load_weights('../data/weights.h5')
-    # model = multi_gpu_model(model, gpus=2)
+    raw_model = UNet((img_rows, img_cols, 1), start_ch=8, depth=7, batchnorm=True, dropout=0.5, maxpool=True, residual=True)
+
+    model = ModelMGPU(raw_model, 2)
 
     model.summary()
     model_checkpoint = ModelCheckpoint(
@@ -181,13 +183,14 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32,
         use_multiprocessing=True)
 
     plot_learning_performance(history, 'plot.png')
+    model.save("../data/weights.h5")
 
 
 if __name__ == '__main__':
     import time
     import os
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "1,2"
 
     start_logging()
     start = time.time()
