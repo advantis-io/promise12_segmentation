@@ -13,14 +13,10 @@ from functools import partial
 
 from keras.callbacks import EarlyStopping
 from keras.callbacks import ModelCheckpoint
-from keras.datasets import imdb
 from keras.optimizers import Adam
-from keras.preprocessing.image import ImageDataGenerator
-from keras.utils import multi_gpu_model
 from skimage.exposure import equalize_adapthist
 
 from augmenters import *
-from dual_image_datagenerator import DualImageGenerator
 from logging_writer import LoggingWriter
 from metrics import dice_coef, dice_coef_loss
 from model_mgpu import ModelMGPU
@@ -156,9 +152,11 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32,
         fill_mode='constant',
         preprocessing_function=elastic)
 
-    training_sequence = Sequencer(X_train_raw, y_train_raw, sequence_size=n_imgs, batch_size=batch_size, data_gen_args=data_gen_args)
+    training_sequence = Sequencer(X_train_raw, y_train_raw, sequence_size=n_imgs, batch_size=batch_size,
+                                  data_gen_args=data_gen_args)
 
-    raw_model = UNet((img_rows, img_cols, 1), start_ch=8, depth=7, batchnorm=True, dropout=0.5, maxpool=True, residual=True)
+    raw_model = UNet((img_rows, img_cols, 1), start_ch=8, depth=7, batchnorm=True, dropout=0.5, maxpool=True,
+                     residual=True)
 
     model = ModelMGPU(raw_model, 2)
 
