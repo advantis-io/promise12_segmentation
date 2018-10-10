@@ -138,7 +138,7 @@ def keras_fit_fold(fold_nr, train_index, test_index, img_rows=96, img_cols=96, n
 
     c_backs = [model_checkpoint]
     c_backs.append(LoggingWriter())
-    c.backs.append(MetricsCallback(X_train_raw, y_train_raw, X_val, y_val))
+    c_backs.append(MetricsCallback(X_train_raw, y_train_raw, X_val, y_val))
 
     model.compile(optimizer=Adam(lr=0.001), loss=dice_coef_loss, metrics=[dice_coef, rel_abs_vol_diff])
 
