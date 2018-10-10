@@ -21,7 +21,6 @@ def dice_coef_loss(y_true, y_pred):
 def numpy_dice(y_true, y_pred, axis=None, smooth=1.0):
 
     intersection = y_true*y_pred
-
     return ( 2. * intersection.sum(axis=axis) +smooth)/ (np.sum(y_true, axis=axis) + np.sum(y_pred, axis=axis) +smooth )
 
 

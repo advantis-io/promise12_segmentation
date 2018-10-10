@@ -18,7 +18,8 @@ from sklearn.model_selection import KFold
 
 from augmenters import *
 from logging_writer import LoggingWriter
-from metrics import dice_coef, dice_coef_loss
+from metrics import dice_coef, dice_coef_loss, rel_abs_vol_diff
+from metrics_callback import MetricsCallback
 from model_mgpu import ModelMGPU
 from models import *
 from print_graph import plot_learning_performance
@@ -49,6 +50,9 @@ def img_resize(imgs, img_rows, img_cols, equalize=True):
 
 
 def load_data(img_rows, img_cols, train_list, val_list):
+    logging.info("Training set: {}".format(train_list))
+    logging.info("Test set: {}".format(val_list))
+
     fileList = os.listdir('../data/train/')
     fileList = sorted(filter(lambda x: '.mhd' in x, fileList))
 
@@ -134,8 +138,9 @@ def keras_fit_fold(fold_nr, train_index, test_index, img_rows=96, img_cols=96, n
 
     c_backs = [model_checkpoint]
     c_backs.append(LoggingWriter())
+    c.backs.append(MetricsCallback(X_train_raw, y_train_raw, X_val, y_val))
 
-    model.compile(optimizer=Adam(lr=0.001), loss=dice_coef_loss, metrics=[dice_coef])
+    model.compile(optimizer=Adam(lr=0.001), loss=dice_coef_loss, metrics=[dice_coef, rel_abs_vol_diff])
 
     history = model.fit_generator(
         training_sequence,
