@@ -11,10 +11,10 @@ from __future__ import division, print_function
 import logging
 from functools import partial
 
-from keras.callbacks import EarlyStopping
 from keras.callbacks import ModelCheckpoint
 from keras.optimizers import Adam
 from skimage.exposure import equalize_adapthist
+from sklearn.model_selection import KFold
 
 from augmenters import *
 from logging_writer import LoggingWriter
@@ -48,14 +48,12 @@ def img_resize(imgs, img_rows, img_cols, equalize=True):
     return new_imgs
 
 
-def data_to_array(img_rows, img_cols):
-    clahe = cv2.createCLAHE(clipLimit=0.05, tileGridSize=(int(img_rows / 8), int(img_cols / 8)))
-
+def load_data(img_rows, img_cols, train_list, val_list):
     fileList = os.listdir('../data/train/')
     fileList = sorted(filter(lambda x: '.mhd' in x, fileList))
 
-    val_list = [5, 15, 25, 35, 45]
-    train_list = list(set(range(50)) - set(val_list))
+    # val_list = [5, 15, 25, 35, 45]
+    # train_list = list(set(range(50)) - set(val_list))
     count = 0
     for the_list in [train_list, val_list]:
         images = []
@@ -89,50 +87,20 @@ def data_to_array(img_rows, img_cols):
             sigma = np.std(images)
             images = (images - mu) / sigma
 
-            np.save('../data/X_train.npy', images)
-            np.save('../data/y_train.npy', masks)
+            X_train = images
+            y_train = masks
         elif count == 1:
             images = (images - mu) / sigma
 
-            np.save('../data/X_val.npy', images)
-            np.save('../data/y_val.npy', masks)
+            X_val = images
+            y_val = images
         count += 1
-
-    fileList = os.listdir('../data/test/')
-    fileList = sorted(filter(lambda x: '.mhd' in x, fileList))
-
-    n_imgs = []
-    images = []
-    for filename in fileList:
-        logging.info("Working on {}".format(filename))
-        itkimage = sitk.ReadImage('../data/test/' + filename)
-        imgs = sitk.GetArrayFromImage(itkimage)
-        imgs = img_resize(imgs, img_rows, img_cols, equalize=True)
-        images.append(imgs)
-        n_imgs.append(len(imgs))
-
-    images = np.concatenate(images, axis=0).reshape(-1, img_rows, img_cols, 1)
-    images = smooth_images(images)
-    images = (images - mu) / sigma
-    np.save('../data/X_test.npy', images)
-    np.save('../data/test_n_imgs.npy', np.array(n_imgs))
-
-
-def load_data():
-    X_train = np.load('../data/X_train.npy')
-    y_train = np.load('../data/y_train.npy')
-    X_val = np.load('../data/X_val.npy')
-    y_val = np.load('../data/y_val.npy')
 
     return X_train, y_train, X_val, y_val
 
 
-def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32, regenerate=True, workers=1):
-    if regenerate:
-        data_to_array(img_rows, img_cols)
-        # preprocess_data()
-
-    X_train_raw, y_train_raw, X_val, y_val = load_data()
+def keras_fit_fold(fold_nr, train_index, test_index, img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32, workers=1):
+    X_train_raw, y_train_raw, X_val, y_val = load_data(img_rows, img_cols, train_index, test_index)
 
     img_rows = X_train_raw.shape[1]
     img_cols = X_train_raw.shape[2]
@@ -162,7 +130,7 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32,
 
     model.summary(print_fn=logging.info)
     model_checkpoint = ModelCheckpoint(
-        '../data/weights.h5', monitor='val_loss', save_best_only=True)
+        '../data/weights-' + str(fold_nr) + '.h5', monitor='val_loss', save_best_only=True)
 
     c_backs = [model_checkpoint]
     c_backs.append(LoggingWriter())
@@ -180,7 +148,18 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32,
         use_multiprocessing=True)
 
     logging.info(history.history)
-    plot_learning_performance(history, 'plot.png')
+    plot_learning_performance(history, 'plot-' + str(fold_nr) + '.png')
+
+
+def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32, workers=1):
+    # preprocess_data()
+
+    kf = KFold(n_splits=5, shuffle=True)
+    for fold_nr, (train_index, test_index) in enumerate(kf.split(range(0, 50))):
+        logging.info("Starting Fold: {}".format(fold_nr))
+        keras_fit_fold(fold_nr, train_index, test_index, img_rows, img_cols, n_imgs, batch_size, workers)
+
+
 
 
 if __name__ == '__main__':
@@ -191,10 +170,10 @@ if __name__ == '__main__':
 
     start_logging()
     start = time.time()
-    keras_fit_generator(img_rows=256, img_cols=256, regenerate=False,
+    keras_fit_generator(img_rows=256, img_cols=256,
                         n_imgs=1000, batch_size=128, workers=16)
 
-    #15 * 10 ** 4
+    # 15 * 10 ** 4
 
     end = time.time()
 
