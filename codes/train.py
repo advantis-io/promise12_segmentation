@@ -130,7 +130,7 @@ def keras_fit_fold(fold_nr, train_index, test_index, img_rows=96, img_cols=96, n
     raw_model = UNet((img_rows, img_cols, 1), start_ch=8, depth=7, batchnorm=True, dropout=0.5, maxpool=True,
                      residual=True)
 
-    model = ModelMGPU(raw_model, 2)
+    model = ModelMGPU(raw_model, 1)
 
     model.summary(print_fn=logging.info)
     model_checkpoint = ModelCheckpoint(
@@ -171,7 +171,7 @@ if __name__ == '__main__':
     import time
     import os
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = "1,2"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
     start_logging()
     start = time.time()
