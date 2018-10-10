@@ -172,7 +172,7 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32,
 
     history = model.fit_generator(
         training_sequence,
-        epochs=25,
+        epochs=10,
         verbose=1,
         shuffle=True,
         validation_data=(X_val, y_val),
@@ -193,7 +193,9 @@ if __name__ == '__main__':
     start_logging()
     start = time.time()
     keras_fit_generator(img_rows=256, img_cols=256, regenerate=False,
-                        n_imgs=15 * 10 ** 4, batch_size=128, workers=16)
+                        n_imgs=1000, batch_size=128, workers=16)
+
+    #15 * 10 ** 4
 
     end = time.time()
 
