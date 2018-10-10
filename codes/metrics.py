@@ -48,8 +48,8 @@ def surface_dist(input1, input2, sampling=1, connectivity=1):
 
     conn = morphology.generate_binary_structure(input_1.ndim, connectivity)
 
-    S = input_1 - morphology.binary_erosion(input_1, conn)
-    Sprime = input_2 - morphology.binary_erosion(input_2, conn)
+    S = input_1 ^ morphology.binary_erosion(input_1, conn)
+    Sprime = input_2 ^ morphology.binary_erosion(input_2, conn)
 
 
     dta = morphology.distance_transform_edt(~S,sampling)
