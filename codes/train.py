@@ -165,7 +165,6 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32,
         '../data/weights.h5', monitor='val_loss', save_best_only=True)
 
     c_backs = [model_checkpoint]
-    c_backs.append(EarlyStopping(monitor='loss', min_delta=0.001, patience=5))
     c_backs.append(LoggingWriter())
 
     model.compile(optimizer=Adam(lr=0.001), loss=dice_coef_loss, metrics=[dice_coef])
@@ -180,7 +179,7 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32,
         workers=workers,
         use_multiprocessing=True)
 
-    logging.info(history)
+    logging.info(history.history)
     plot_learning_performance(history, 'plot.png')
 
 
