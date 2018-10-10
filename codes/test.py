@@ -95,8 +95,7 @@ def predict_test(folder='../data/test/', dest='../data/predictions'):
     y_pred = model.predict(X_test, verbose=1, batch_size=128)
 
     fileList =  os.listdir(folder)
-    fileList = filter(lambda x: '.mhd' in x, fileList)
-    fileList.sort()
+    fileList = sorted(filter(lambda x: '.mhd' in x, fileList))
 
     start_ind=0
     end_ind=0
