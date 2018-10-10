@@ -235,8 +235,7 @@ def read_cases(the_list=None, folder='../data/train/', masks=True):
     fileList =  os.listdir(folder)
     fileList = filter(lambda x: '.mhd' in x, fileList)
     if masks:
-        fileList = filter(lambda x: 'segm' in x.lower(), fileList)
-    fileList.sort()
+        fileList = sorted(filter(lambda x: 'segm' in x.lower(), fileList))
     if the_list is not None:
         fileList = filter(lambda x: any(str(ff).zfill(2) in x for ff in the_list), fileList)
 
