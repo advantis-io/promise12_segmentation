@@ -140,7 +140,7 @@ def keras_fit_fold(fold_nr, train_index, test_index, img_rows=96, img_cols=96, n
     c_backs.append(LoggingWriter())
     c_backs.append(MetricsCallback(X_train_raw, y_train_raw, X_val, y_val))
 
-    model.compile(optimizer=Adam(lr=0.001), loss=dice_coef_loss, metrics=[dice_coef, rel_abs_vol_diff])
+    model.compile(optimizer=Adam(lr=0.001), loss=dice_coef_loss, metrics=[dice_coef])
 
     history = model.fit_generator(
         training_sequence,
