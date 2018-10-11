@@ -1,10 +1,9 @@
+import numpy as np
 from keras import callbacks
 
+from augmenters import smooth_images
 from metrics import rel_abs_vol_diff, surface_dist
-from test import resize_pred_to_val, numpy_dice, read_cases
-import numpy as np
-
-from train import smooth_images
+from test import resize_pred_to_val, numpy_dice
 
 
 class MetricsCallback(callbacks.Callback):
@@ -32,7 +31,6 @@ class MetricsCallback(callbacks.Callback):
         mu = np.mean(imgs)
         sigma = np.std(imgs)
         self.X_train = (imgs - mu) / sigma
-
 
     def on_epoch_end(self, batch, logs={}):
         y_pred = self.model.predict(self.X_train, verbose=1, batch_size=128)
