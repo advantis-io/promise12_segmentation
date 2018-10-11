@@ -259,9 +259,6 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32,
             else:
                 test_set.append(data_list[num])
 
-        print(len(train_set))
-        print(len(test_set))
-
         fit(fold_nr, train_set, test_set, img_rows, img_cols, n_imgs, batch_size, workers)
         #keras_fit_fold(train_index, test_index, img_rows, img_cols, n_imgs, batch_size, workers)
 
