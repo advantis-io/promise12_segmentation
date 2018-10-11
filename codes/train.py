@@ -20,7 +20,7 @@ from augmenters import *
 from data_object import DataObject
 from logging_writer import LoggingWriter
 from metrics import dice_coef, dice_coef_loss, rel_abs_vol_diff
-from metrics_callback import MetricsCallback
+#from metrics_callback import MetricsCallback
 from model_mgpu import ModelMGPU
 from models import *
 from print_graph import plot_learning_performance
