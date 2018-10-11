@@ -24,14 +24,14 @@ class MetricsCallback(callbacks.Callback):
 
         imgs = np.concatenate(imgs, axis=0).reshape(-1, img_rows, img_cols, 1)
         masks = np.concatenate(masks, axis=0).reshape(-1, img_rows, img_cols, 1)
-        masks = masks.astype(int)
+        self.y_train = masks.astype(int)
 
         # Smooth images using CurvatureFlow
         imgs = smooth_images(imgs)
 
         mu = np.mean(imgs)
         sigma = np.std(imgs)
-        X_train = (imgs - mu) / sigma
+        self.X_train = (imgs - mu) / sigma
 
 
     def on_epoch_end(self, batch, logs={}):
