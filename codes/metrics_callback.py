@@ -15,30 +15,30 @@ class MetricsCallback(callbacks.Callback):
     def on_train_begin(self, logs={}):
         self.X_train
         self.y_train
-
-        X_train, y_train = extract_data(self.train_set)
-
-        X_train = np.concatenate(X_train, axis=0).reshape(-1, img_rows, img_cols, 1)
-        y_train = np.concatenate(y_train, axis=0).reshape(-1, img_rows, img_cols, 1)
-        y_train = y_train.astype(int)
-
-        # Smooth images using CurvatureFlow
-        X_train = smooth_images(X_train)
-
-        mu = np.mean(X_train)
-        sigma = np.std(X_train)
-        X_train = (X_train - mu) / sigma
-
-        X_test, y_test = extract_data(train_set)
-
-        X_test = np.concatenate(X_test, axis=0).reshape(-1, img_rows, img_cols, 1)
-        y_test = np.concatenate(y_test, axis=0).reshape(-1, img_rows, img_cols, 1)
-        y_test = y_test.astype(int)
-
-        X_test = smooth_images(X_test)
-        X_test = (X_test - mu) / sigma
-
-        self._data = []
+        #
+        # #X_train, y_train = extract_data(self.train_set)
+        #
+        # X_train = np.concatenate(X_train, axis=0).reshape(-1, img_rows, img_cols, 1)
+        # y_train = np.concatenate(y_train, axis=0).reshape(-1, img_rows, img_cols, 1)
+        # y_train = y_train.astype(int)
+        #
+        # # Smooth images using CurvatureFlow
+        # #X_train = smooth_images(X_train)
+        #
+        # mu = np.mean(X_train)
+        # sigma = np.std(X_train)
+        # X_train = (X_train - mu) / sigma
+        #
+        # X_test, y_test = extract_data(train_set)
+        #
+        # X_test = np.concatenate(X_test, axis=0).reshape(-1, img_rows, img_cols, 1)
+        # y_test = np.concatenate(y_test, axis=0).reshape(-1, img_rows, img_cols, 1)
+        # y_test = y_test.astype(int)
+        #
+        # X_test = smooth_images(X_test)
+        # X_test = (X_test - mu) / sigma
+        #
+        # self._data = []
 
     def on_epoch_end(self, batch, logs={}):
         y_pred = self.model.predict(self.X_train, verbose=1, batch_size=128)
