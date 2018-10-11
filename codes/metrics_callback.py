@@ -4,7 +4,7 @@ from metrics import rel_abs_vol_diff, surface_dist
 from test import resize_pred_to_val, numpy_dice, read_cases
 import numpy as np
 
-from train import extract_data, smooth_images
+from train import smooth_images
 
 
 class MetricsCallback(callbacks.Callback):

@@ -164,7 +164,7 @@ def fit(fold_nr, train_set, test_set, img_rows=96, img_cols=96, n_imgs=10 ** 4, 
 
     c_backs = [model_checkpoint]
     c_backs.append(LoggingWriter())
-    #c_backs.append(MetricsCallback(train_set, test_set))
+    c_backs.append(MetricsCallback(train_set, test_set))
 
     model.compile(optimizer=Adam(lr=0.001), loss=dice_coef_loss, metrics=[dice_coef])
 
