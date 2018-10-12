@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 from keras import callbacks
 
@@ -10,6 +12,17 @@ class MetricsCallback(callbacks.Callback):
     def __init__(self, train_set, test_set):
         self.train_set = train_set
         self.test_set = test_set
+        self.test_loss = []
+        self.train_loss = []
+        self.test_dice = []
+        self.train_dice = []
+
+        self.mean_dice = []
+        self.std_dice = []
+        self.mean_hausdorff = []
+        self.std_hausdorff = []
+        self.mean_rel_vol = []
+        self.std_rel_vol = []
 
     def on_train_begin(self, logs={}):
         imgs = []
@@ -35,11 +48,11 @@ class MetricsCallback(callbacks.Callback):
     def on_epoch_end(self, batch, logs={}):
         y_pred = self.model.predict(self.X_train, verbose=1, batch_size=128)
         print('Results on train set:')
-        print('Accuracy:', numpy_dice(self.y_train, y_pred))
+        print('Dice Accuracy:', numpy_dice(self.y_train, y_pred))
 
-        #y_pred = self.model.predict(self.X_test, verbose=1, batch_size=128)
-        #print('Results on validation set')
-        #print('Accuracy:', numpy_dice(self.y_test, y_pred))
+        y_pred = self.model.predict(self.X_test, verbose=1, batch_size=128)
+        print('Results on validation set')
+        print('Accuracy:', numpy_dice(self.y_test, y_pred))
 
         vol_scores = []
         ravd = []
@@ -71,13 +84,26 @@ class MetricsCallback(callbacks.Callback):
         scores = np.concatenate(scores, axis=0)
 
         print('Mean volumetric DSC:', vol_scores.mean())
-        print('Median volumetric DSC:', np.median(vol_scores))
         print('Std volumetric DSC:', vol_scores.std())
         print('Mean Hauss. Dist:', np.mean(hauss_dist))
         print('Mean MSD:', np.mean(mean_surf_dist))
         print('Mean Rel. Abs. Vol. Diff:', ravd.mean())
 
+        self.mean_rel_vol = ravd.mean()
+        self.std_rel_vol = ravd.std()
+        self.mean_hausdorff = np.mean(hauss_dist)
+        self.std_hausdorff = np.std(hauss_dist)
+        self.mean_dice = vol_scores.mean()
+        self.std_dice = vol_scores.std()
+
         return
 
-    def get_data(self):
-        return self._data
+    def on_train_end(self, logs=None):
+        logging.info("Mean Dice: {}".format(self.mean_dice))
+        logging.info("Std Dice: {}".format(self.std_dice))
+        logging.info("Mean Haussdorf: {}".format(self.mean_hausdorff))
+        logging.info("Std Hausdorf: {}".format(self.std_hausdorff))
+        logging.info("Mean Relative / Abs Volume: {}".format(self.mean_rel_vol))
+        logging.info("Std Relative / Abs Volume: {}".format(self.std_rel_vol))
+
+        super().on_train_end(logs)
