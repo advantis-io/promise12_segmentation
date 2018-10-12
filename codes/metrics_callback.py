@@ -37,9 +37,9 @@ class MetricsCallback(callbacks.Callback):
         print('Results on train set:')
         print('Accuracy:', numpy_dice(self.y_train, y_pred))
 
-        y_pred = self.model.predict(self.X_test, verbose=1, batch_size=128)
-        print('Results on validation set')
-        print('Accuracy:', numpy_dice(self.y_test, y_pred))
+        #y_pred = self.model.predict(self.X_test, verbose=1, batch_size=128)
+        #print('Results on validation set')
+        #print('Accuracy:', numpy_dice(self.y_test, y_pred))
 
         vol_scores = []
         ravd = []
