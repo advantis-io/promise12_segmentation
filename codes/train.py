@@ -127,7 +127,7 @@ def fit(fold_nr, train_set, test_set, img_rows=96, img_cols=96, n_imgs=10 ** 4, 
 
     history = model.fit_generator(
         training_sequence,
-        epochs=5,
+        epochs=50,
         verbose=1,
         shuffle=True,
         validation_data=(X_test, y_test),
@@ -160,7 +160,7 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32,
             else:
                 test_set.append(data_list[num])
 
-        train_names = ", ".join(list(map(lambda x: x.case, train_set)).join(", "))
+        train_names = ", ".join(list(map(lambda x: x.case, train_set)))
         logging.info("Training Set Names: {}", train_names)
         test_names = ", ".join(list(map(lambda x: x.case, test_set)))
         logging.info("Test Set Names: {}", test_names)
@@ -207,7 +207,7 @@ if __name__ == '__main__':
     start_logging()
     start = time.time()
     keras_fit_generator(img_rows=256, img_cols=256,
-                        n_imgs=1000, batch_size=128, workers=16)
+                        n_imgs=15 * 10 ** 4, batch_size=128, workers=16)
 
     # 15 * 10 ** 4
 
