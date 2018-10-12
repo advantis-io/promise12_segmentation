@@ -15,7 +15,7 @@ class MetricsCallback(callbacks.Callback):
     def __init__(self, X_train, y_train, X_test, y_test, test_set):
         self.X_train = X_train
         self.X_test = X_test
-        self.y_trian = y_train
+        self.y_train = y_train
         self.y_test = y_test
         self.test_set = test_set
         self.test_loss = []

@@ -127,7 +127,7 @@ def fit(fold_nr, train_set, test_set, img_rows=96, img_cols=96, n_imgs=10 ** 4, 
 
     history = model.fit_generator(
         training_sequence,
-        epochs=10,
+        epochs=5,
         verbose=1,
         shuffle=True,
         validation_data=(X_test, y_test),
