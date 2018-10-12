@@ -148,8 +148,8 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32,
     kf = KFold(n_splits=5, shuffle=True, random_state=seed)
     for fold_nr, (train_index, test_index) in enumerate(kf.split(data_list)):
         logging.info("Starting Fold: {}".format(fold_nr))
-        logging.info("Training Set: {}".format(train_index))
-        logging.info("Test Set: {}".format(test_index))
+        #logging.info("Training Set: {}".format(train_index))
+        #logging.info("Test Set: {}".format(test_index))
 
         train_set = []
         test_set = []
@@ -159,6 +159,11 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32,
                 train_set.append(data_list[num])
             else:
                 test_set.append(data_list[num])
+
+        train_names = list(map(lambda x: x.name, train_set)).join(", ")
+        logging.info("Training Set Names: {}", train_names)
+        test_names = list(map(lambda x: x.name, test_set)).join(", ")
+        logging.info("Test Set Names: {}", test_names)
 
         fit(fold_nr, train_set, test_set, img_rows, img_cols, n_imgs, batch_size, workers)
 
