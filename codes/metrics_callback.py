@@ -6,6 +6,10 @@ from keras import callbacks
 from metrics import surface_dist
 from test import resize_pred_to_val, numpy_dice
 
+import matplotlib.pyplot as plt
+
+logging.getLogger("matplotlib").setLevel(logging.CRITICAL)
+
 
 class MetricsCallback(callbacks.Callback):
     def __init__(self, X_train, y_train, X_test, y_test):
@@ -71,4 +75,29 @@ class MetricsCallback(callbacks.Callback):
         super().on_train_end(logs)
 
     def save(self, path):
-        pass
+        epochs = list(range(1, len(self.mean_dice) + 1))
+
+        _, axes = plt.subplots(nrows=2, ncols=2, sharex=True)
+
+        ax2 = axes[0]
+        ax2.plot(epochs, history.history['loss'], label='Training')
+        ax2.set_title('Loss')
+        plt.xlabel('Epochs')
+        ax2.set_ylabel('Loss')
+        ax2.legend()
+
+        ax4 = axes[1]
+        ax4.set_ylim(ax2.get_ylim())
+        ax4.plot(epochs, smooth_curve(history.history['loss']), label='Training')
+        if with_validation:
+            ax4.plot(epochs, smooth_curve(history.history['val_loss']), label='Validation')
+        ax4.set_title('Loss EMA')
+        plt.xlabel('Epochs')
+        ax4.legend()
+
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+        plt.savefig(experiment_file)
+
+        plt.clf()
+        plt.cla()
+        plt.close()

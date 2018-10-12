@@ -56,8 +56,8 @@ def extract_and_normalize_data(train_set, test_set):
         imgs_train.append(data_obj.image)
         masks_train.append(data_obj.mask)
 
-    img_rows = imgs_train[0].shape[0]
-    img_cols = imgs_train[0].shape[0]
+    img_rows = imgs_train[0].shape[1]
+    img_cols = imgs_train[0].shape[2]
 
     X_train = np.concatenate(imgs_train, axis=0).reshape(-1, img_rows, img_cols, 1)
     y_train = np.concatenate(masks_train, axis=0).reshape(-1, img_rows, img_cols, 1)
@@ -137,7 +137,7 @@ def fit(fold_nr, train_set, test_set, img_rows=96, img_cols=96, n_imgs=10 ** 4, 
 
     logging.info(history.history)
     plot_learning_performance(history, 'loss-' + str(fold_nr) + '.png')
-
+    metrics_callback.save('metrics-' + str(fold_nr) + '.png')
 
 def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32, workers=1):
     DATA_PATH = '../data/train'
