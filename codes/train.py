@@ -202,12 +202,12 @@ if __name__ == '__main__':
     import time
     import os
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2"
 
     start_logging()
     start = time.time()
     keras_fit_generator(img_rows=256, img_cols=256,
-                        n_imgs=15 * 10 ** 4, batch_size=128, workers=16)
+                        n_imgs=15 * 10 ** 4, batch_size=192, workers=16)
 
     # 15 * 10 ** 4
 
