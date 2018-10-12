@@ -281,7 +281,7 @@ def load_data(data_path, img_rows, img_cols):
         img = sitk.GetArrayFromImage(itkimage)
 
         itkmask = sitk.ReadImage(segment_path)
-        mask_spacing = itkmask.GetSpacing
+        mask_spacing = itkmask.GetSpacing[::-1]
 
         mask = sitk.GetArrayFromImage(itkmask)
 
