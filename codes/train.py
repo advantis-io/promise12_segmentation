@@ -49,72 +49,18 @@ def img_resize(imgs, img_rows, img_cols, equalize=True):
     return new_imgs
 
 
-def load_data2(img_rows, img_cols, train_list, val_list):
-    logging.info("Training set: {}".format(train_list))
-    logging.info("Test set: {}".format(val_list))
+def extract_and_normalize_data(train_set, test_set):
+    imgs_train = []
+    masks_train = []
+    for data_obj in train_set:
+        imgs_train.append(data_obj.image)
+        masks_train.append(data_obj.mask)
 
-    fileList = os.listdir('../data/train/')
-    fileList = sorted(filter(lambda x: '.mhd' in x, fileList))
+    img_rows = imgs_train[0].shape[0]
+    img_cols = imgs_train[0].shape[0]
 
-    count = 0
-    for the_list in [train_list, val_list]:
-        images = []
-        masks = []
-
-        filtered = filter(lambda x: any(str(ff).zfill(2) in x for ff in the_list), fileList)
-
-        for filename in filtered:
-            logging.info("Working on {}".format(filename))
-
-            itkimage = sitk.ReadImage('../data/train/' + filename)
-            imgs = sitk.GetArrayFromImage(itkimage)
-
-            if 'segm' in filename.lower():
-                imgs = img_resize(imgs, img_rows, img_cols, equalize=False)
-                masks.append(imgs)
-
-            else:
-                imgs = img_resize(imgs, img_rows, img_cols, equalize=True)
-                images.append(imgs)
-
-        images = np.concatenate(images, axis=0).reshape(-1, img_rows, img_cols, 1)
-        masks = np.concatenate(masks, axis=0).reshape(-1, img_rows, img_cols, 1)
-        masks = masks.astype(int)
-
-        # Smooth images using CurvatureFlow
-        images = smooth_images(images)
-
-        if count == 0:
-            mu = np.mean(images)
-            sigma = np.std(images)
-            images = (images - mu) / sigma
-
-            X_train = images
-            y_train = masks
-        elif count == 1:
-            images = (images - mu) / sigma
-
-            X_val = images
-            y_val = images
-        count += 1
-
-    return X_train, y_train, X_val, y_val
-
-def extract_data(data_set):
-    imgs = []
-    masks = []
-    for data_obj in data_set:
-        imgs.append(data_obj.image)
-        masks.append(data_obj.mask)
-
-    return imgs, masks
-
-
-def fit(fold_nr, train_set, test_set, img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32, workers=1):
-    X_train, y_train = extract_data(train_set)
-
-    X_train = np.concatenate(X_train, axis=0).reshape(-1, img_rows, img_cols, 1)
-    y_train = np.concatenate(y_train, axis=0).reshape(-1, img_rows, img_cols, 1)
+    X_train = np.concatenate(imgs_train, axis=0).reshape(-1, img_rows, img_cols, 1)
+    y_train = np.concatenate(masks_train, axis=0).reshape(-1, img_rows, img_cols, 1)
     y_train = y_train.astype(int)
 
     # Smooth images using CurvatureFlow
@@ -124,16 +70,28 @@ def fit(fold_nr, train_set, test_set, img_rows=96, img_cols=96, n_imgs=10 ** 4, 
     sigma = np.std(X_train)
     X_train = (X_train - mu) / sigma
 
-    X_test, y_test = extract_data(train_set)
+    imgs_test = []
+    masks_test = []
+    for data_obj in test_set:
+        imgs_test.append(data_obj.image)
+        masks_test.append(data_obj.mask)
 
-    X_test = np.concatenate(X_test, axis=0).reshape(-1, img_rows, img_cols, 1)
-    y_test = np.concatenate(y_test, axis=0).reshape(-1, img_rows, img_cols, 1)
+    X_test = np.concatenate(imgs_test, axis=0).reshape(-1, img_rows, img_cols, 1)
+    y_test = np.concatenate(masks_test, axis=0).reshape(-1, img_rows, img_cols, 1)
     y_test = y_test.astype(int)
 
     X_test = smooth_images(X_test)
     X_test = (X_test - mu) / sigma
 
-    #Done With Preprocessing! :)
+    logging.debug("TrainSet Size: {}, TestSet Size: {}".format(len(X_train), len(X_test)))
+
+    return X_train, y_train, X_test, y_test
+
+
+def fit(fold_nr, train_set, test_set, img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32, workers=1):
+    X_train, y_train, X_test, y_test = extract_and_normalize_data(train_set, test_set)
+
+    # Done With Preprocessing! :)
 
     x, y = np.meshgrid(np.arange(img_rows), np.arange(img_cols), indexing='ij')
     elastic = partial(elastic_transform, x=x, y=y, alpha=img_rows * 1.5, sigma=img_rows * 0.07)
@@ -161,10 +119,9 @@ def fit(fold_nr, train_set, test_set, img_rows=96, img_cols=96, n_imgs=10 ** 4, 
     model.summary(print_fn=logging.info)
     model_checkpoint = ModelCheckpoint(
         '../data/weights-' + str(fold_nr) + '.h5', monitor='val_loss', save_best_only=True)
+    metrics_callback = MetricsCallback(X_train, y_train, X_test, y_test)
 
-    c_backs = [model_checkpoint]
-    c_backs.append(LoggingWriter())
-    c_backs.append(MetricsCallback(train_set, test_set))
+    c_backs = [model_checkpoint, LoggingWriter(), metrics_callback]
 
     model.compile(optimizer=Adam(lr=0.001), loss=dice_coef_loss, metrics=[dice_coef])
 
@@ -179,72 +136,16 @@ def fit(fold_nr, train_set, test_set, img_rows=96, img_cols=96, n_imgs=10 ** 4, 
         use_multiprocessing=True)
 
     logging.info(history.history)
-    plot_learning_performance(history, 'plot-' + str(fold_nr) + '.png')
-
-    print('done')
-
-
-
-def keras_fit_fold(fold_nr, train_index, test_index, img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32, workers=1):
-    X_train_raw, y_train_raw, X_val, y_val = load_data(img_rows, img_cols, train_index, test_index)
-
-    img_rows = X_train_raw.shape[1]
-    img_cols = X_train_raw.shape[2]
-
-    x, y = np.meshgrid(np.arange(img_rows), np.arange(img_cols), indexing='ij')
-    elastic = partial(elastic_transform, x=x, y=y, alpha=img_rows * 1.5, sigma=img_rows * 0.07)
-    # we create two instances with the same arguments
-    data_gen_args = dict(
-        featurewise_center=False,
-        featurewise_std_normalization=False,
-        rotation_range=10.,
-        width_shift_range=0.1,
-        height_shift_range=0.1,
-        horizontal_flip=True,
-        vertical_flip=True,
-        zoom_range=[1, 1.2],
-        fill_mode='constant',
-        preprocessing_function=elastic)
-
-    training_sequence = Sequencer(X_train_raw, y_train_raw, sequence_size=n_imgs, batch_size=batch_size,
-                                  data_gen_args=data_gen_args)
-
-    raw_model = UNet((img_rows, img_cols, 1), start_ch=8, depth=7, batchnorm=True, dropout=0.5, maxpool=True,
-                     residual=True)
-
-    model = ModelMGPU(raw_model, 2)
-
-    model.summary(print_fn=logging.info)
-    model_checkpoint = ModelCheckpoint(
-        '../data/weights-' + str(fold_nr) + '.h5', monitor='val_loss', save_best_only=True)
-
-    c_backs = [model_checkpoint]
-    c_backs.append(LoggingWriter())
-    c_backs.append(MetricsCallback(X_train_raw, y_train_raw, X_val, y_val))
-
-    model.compile(optimizer=Adam(lr=0.001), loss=dice_coef_loss, metrics=[dice_coef])
-
-    history = model.fit_generator(
-        training_sequence,
-        epochs=10,
-        verbose=1,
-        shuffle=True,
-        validation_data=(X_val, y_val),
-        callbacks=c_backs,
-        workers=workers,
-        use_multiprocessing=True)
-
-    #logging.info(history.history)
-    #plot_learning_performance(history, 'plot-' + str(fold_nr) + '.png')
+    plot_learning_performance(history, 'loss-' + str(fold_nr) + '.png')
 
 
 def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32, workers=1):
-    # preprocess_data()
-
     DATA_PATH = '../data/train'
     data_list = load_data(DATA_PATH, img_rows, img_cols)
 
-    kf = KFold(n_splits=5, shuffle=True)
+    seed = 42
+
+    kf = KFold(n_splits=5, shuffle=True, random_state=seed)
     for fold_nr, (train_index, test_index) in enumerate(kf.split(data_list)):
         logging.info("Starting Fold: {}".format(fold_nr))
         logging.info("Training Set: {}".format(train_index))
@@ -260,7 +161,6 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32,
                 test_set.append(data_list[num])
 
         fit(fold_nr, train_set, test_set, img_rows, img_cols, n_imgs, batch_size, workers)
-        #keras_fit_fold(train_index, test_index, img_rows, img_cols, n_imgs, batch_size, workers)
 
 
 def load_data(data_path, img_rows, img_cols):
