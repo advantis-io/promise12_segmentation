@@ -56,8 +56,8 @@ class MetricsCallback(callbacks.Callback):
 
         vol_scores = np.array(vol_scores)
 
-        print('Mean volumetric DSC:', vol_scores.mean())
-        print('Std volumetric DSC:', vol_scores.std())
+        print('Mean volumetric DICE:', vol_scores.mean())
+        print('Std volumetric DICE:', vol_scores.std())
         print('Mean Haussdorf. Dist:', np.mean(hauss_dist))
         print('Std Haussdorf DSC:', np.std(hauss_dist))
 
