@@ -114,7 +114,7 @@ def fit(fold_nr, train_set, test_set, img_rows=96, img_cols=96, n_imgs=10 ** 4, 
     raw_model = UNet((img_rows, img_cols, 1), start_ch=8, depth=7, batchnorm=True, dropout=0.5, maxpool=True,
                      residual=True)
 
-    model = ModelMGPU(raw_model, 2)
+    model = ModelMGPU(raw_model, 4)
 
     model.summary(print_fn=logging.info)
     model_checkpoint = ModelCheckpoint(
@@ -202,12 +202,12 @@ if __name__ == '__main__':
     import time
     import os
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2"
+    #os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2"
 
     start_logging()
     start = time.time()
     keras_fit_generator(img_rows=256, img_cols=256,
-                        n_imgs=15 * 10 ** 4, batch_size=192, workers=16)
+                        n_imgs=15 * 10 ** 4, batch_size=256, workers=16)
 
     # 15 * 10 ** 4
 
