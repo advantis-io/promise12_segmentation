@@ -160,9 +160,9 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32,
             else:
                 test_set.append(data_list[num])
 
-        train_names = list(map(lambda x: x.case, train_set)).join(", ")
+        train_names = ", ".join(list(map(lambda x: x.case, train_set)).join(", "))
         logging.info("Training Set Names: {}", train_names)
-        test_names = list(map(lambda x: x.case, test_set)).join(", ")
+        test_names = ", ".join(list(map(lambda x: x.case, test_set)))
         logging.info("Test Set Names: {}", test_names)
 
         fit(fold_nr, train_set, test_set, img_rows, img_cols, n_imgs, batch_size, workers)
