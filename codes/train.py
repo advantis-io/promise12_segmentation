@@ -140,7 +140,7 @@ def fit(fold_nr, train_set, test_set, img_rows=96, img_cols=96, n_imgs=10 ** 4, 
     metrics_callback.save('metrics-' + str(fold_nr) + '.png')
 
 def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32, workers=1):
-    DATA_PATH = '../data/train_small'
+    DATA_PATH = '../data/train'
     data_list = load_data(DATA_PATH, img_rows, img_cols)
 
     seed = 42
