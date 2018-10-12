@@ -119,7 +119,7 @@ def fit(fold_nr, train_set, test_set, img_rows=96, img_cols=96, n_imgs=10 ** 4, 
     model.summary(print_fn=logging.info)
     model_checkpoint = ModelCheckpoint(
         '../data/weights-' + str(fold_nr) + '.h5', monitor='val_loss', save_best_only=True)
-    metrics_callback = MetricsCallback(X_train, y_train, X_test, y_test)
+    metrics_callback = MetricsCallback(X_train, y_train, X_test, y_test, test_set)
 
     c_backs = [model_checkpoint, LoggingWriter(), metrics_callback]
 
@@ -167,7 +167,7 @@ def load_data(data_path, img_rows, img_cols):
     file_list = os.listdir(data_path)
     file_list = [k for k in file_list if '.mhd' in k]
     file_list = [k for k in file_list if not '_segmentation' in k]
-    case_list = list(map(lambda x: x.split('.')[0], file_list))
+    case_list = sorted(list(map(lambda x: x.split('.')[0], file_list)))
 
     data_list = []
     for case in case_list:

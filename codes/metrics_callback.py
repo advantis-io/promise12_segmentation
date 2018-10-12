@@ -12,11 +12,12 @@ logging.getLogger("matplotlib").setLevel(logging.CRITICAL)
 
 
 class MetricsCallback(callbacks.Callback):
-    def __init__(self, X_train, y_train, X_test, y_test):
+    def __init__(self, X_train, y_train, X_test, y_test, test_set):
         self.X_train = X_train
         self.X_test = X_test
         self.y_trian = y_train
         self.y_test = y_test
+        self.test_set = test_set
         self.test_loss = []
         self.train_loss = []
         self.test_dice = []
@@ -40,7 +41,7 @@ class MetricsCallback(callbacks.Callback):
         hauss_dist = []
 
         end_ind = 0
-        for data_obj in self.train_set:
+        for data_obj in self.test_set:
             y_true = data_obj.mask
             spacing = data_obj.mask_spacing
 
@@ -77,26 +78,34 @@ class MetricsCallback(callbacks.Callback):
     def save(self, path):
         epochs = list(range(1, len(self.mean_dice) + 1))
 
-        _, axes = plt.subplots(nrows=2, ncols=2, sharex=True)
+        _, axes = plt.subplots(nrows=4, ncols=1, sharex=True)
 
-        ax2 = axes[0]
-        ax2.plot(epochs, history.history['loss'], label='Training')
-        ax2.set_title('Loss')
+        ax1 = axes[0]
+        ax1.plot(epochs, self.mean_dice, label='Validation')
+        ax1.set_title('Mean Dice')
         plt.xlabel('Epochs')
-        ax2.set_ylabel('Loss')
+        ax1.legend()
+
+        ax2 = axes[1]
+        ax2.plot(epochs, self.std_dice, label='Validation')
+        ax2.set_title('Std Dice')
+        plt.xlabel('Epochs')
         ax2.legend()
 
-        ax4 = axes[1]
-        ax4.set_ylim(ax2.get_ylim())
-        ax4.plot(epochs, smooth_curve(history.history['loss']), label='Training')
-        if with_validation:
-            ax4.plot(epochs, smooth_curve(history.history['val_loss']), label='Validation')
-        ax4.set_title('Loss EMA')
+        ax3 = axes[2]
+        ax3.plot(epochs, self.mean_hausdorff, label='Validation')
+        ax3.set_title('Mean Hausdorff')
+        plt.xlabel('Epochs')
+        ax3.legend()
+
+        ax4 = axes[3]
+        ax4.plot(epochs, self.std_hausdorff, label='Validation')
+        ax4.set_title('Std Hausdorff')
         plt.xlabel('Epochs')
         ax4.legend()
 
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-        plt.savefig(experiment_file)
+        plt.savefig(path)
 
         plt.clf()
         plt.cla()
