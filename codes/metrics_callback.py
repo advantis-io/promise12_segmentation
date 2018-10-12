@@ -45,6 +45,19 @@ class MetricsCallback(callbacks.Callback):
         sigma = np.std(imgs)
         self.X_train = (imgs - mu) / sigma
 
+        imgs = []
+        masks = []
+        for data_obj in self.test_set:
+            imgs.append(data_obj.image)
+            masks.append(data_obj.mask)
+
+        X_test = np.concatenate(imgs, axis=0).reshape(-1, img_rows, img_cols, 1)
+        y_test = np.concatenate(masks, axis=0).reshape(-1, img_rows, img_cols, 1)
+        self.y_test = y_test.astype(int)
+
+        X_test = smooth_images(X_test)
+        self.X_test = (X_test - mu) / sigma
+
     def on_epoch_end(self, batch, logs={}):
         y_pred = self.model.predict(self.X_train, verbose=1, batch_size=128)
         print('Results on train set:')
