@@ -51,7 +51,7 @@ class MetricsCallback(callbacks.Callback):
         end_ind = 0
         for data_obj in self.train_set:
             y_true = data_obj.mask
-            spacing = data_obj.mask_spacing
+            spacing = data_obj.mask_spacing[::-1]
 
             start_ind = end_ind
             end_ind += len(y_true)
