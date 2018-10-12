@@ -102,12 +102,12 @@ class MetricsCallback(callbacks.Callback):
         print('Mean MSD:', np.mean(mean_surf_dist))
         print('Mean Rel. Abs. Vol. Diff:', ravd.mean())
 
-        self.mean_rel_vol = ravd.mean()
-        self.std_rel_vol = ravd.std()
-        self.mean_hausdorff = np.mean(hauss_dist)
-        self.std_hausdorff = np.std(hauss_dist)
-        self.mean_dice = vol_scores.mean()
-        self.std_dice = vol_scores.std()
+        self.mean_rel_vol.append(ravd.mean())
+        self.std_rel_vol.append(ravd.std())
+        self.mean_hausdorff.append(np.mean(hauss_dist))
+        self.std_hausdorff.append(np.std(hauss_dist))
+        self.mean_dice.append(vol_scores.mean())
+        self.std_dice.append(vol_scores.std())
 
         return
 
