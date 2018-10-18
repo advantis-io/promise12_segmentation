@@ -20,7 +20,7 @@ from augmenters import *
 from data_object import DataObject
 from logging_writer import LoggingWriter
 from metrics_callback import MetricsCallback
-from metrics import dice_coef, dice_coef_loss, rel_abs_vol_diff
+from metrics import dice_coef, dice_coef_loss
 from model_mgpu import ModelMGPU
 from models import *
 from print_graph import plot_learning_performance
@@ -138,6 +138,7 @@ def fit(fold_nr, train_set, test_set, img_rows=96, img_cols=96, n_imgs=10 ** 4, 
     logging.info(history.history)
     plot_learning_performance(history, 'loss-' + str(fold_nr) + '.png')
     metrics_callback.save('metrics-' + str(fold_nr) + '.png')
+
 
 def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32, workers=1):
     DATA_PATH = '../data/train'

@@ -1,5 +1,7 @@
 import random
 
+import tensorflow
+
 from keras.utils import Sequence
 import numpy as np
 from keras_preprocessing.image import ImageDataGenerator
