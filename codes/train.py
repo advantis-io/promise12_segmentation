@@ -70,6 +70,9 @@ def extract_and_normalize_data(train_set, test_set):
     sigma = np.std(X_train)
     X_train = (X_train - mu) / sigma
 
+    logging.info("Standardizing Training Data - Mu: {} and Sigma: {}".format(mu, sigma))
+    logging.info("Training Data after Standartisation - Min: {} and Max {}".format(np.min(X_train), np.max(X_train)))
+
     imgs_test = []
     masks_test = []
     for data_obj in test_set:
