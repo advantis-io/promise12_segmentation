@@ -210,7 +210,7 @@ if __name__ == '__main__':
     import time
     import os
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0, 3"
 
     start_logging()
     start = time.time()
