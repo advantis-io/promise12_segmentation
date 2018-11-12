@@ -12,6 +12,7 @@ import logging
 from functools import partial
 
 from keras.callbacks import ModelCheckpoint
+from keras.losses import binary_crossentropy
 from keras.optimizers import Adam
 from skimage.exposure import equalize_adapthist
 from sklearn.model_selection import KFold
@@ -126,7 +127,7 @@ def fit(fold_nr, train_set, test_set, img_rows=96, img_cols=96, n_imgs=10 ** 4, 
 
     c_backs = [model_checkpoint, LoggingWriter(), metrics_callback]
 
-    model.compile(optimizer=Adam(lr=0.001), loss=dice_coef_loss, metrics=[dice_coef])
+    model.compile(optimizer=Adam(lr=0.001), loss=binary_crossentropy, metrics=[dice_coef])
 
     history = model.fit_generator(
         training_sequence,
