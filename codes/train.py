@@ -8,6 +8,7 @@ Created on Fri Sep 15 17:18:38 2017
 
 from __future__ import division, print_function
 
+import json
 import logging
 from functools import partial
 
@@ -74,6 +75,9 @@ def extract_and_normalize_data(train_set, test_set):
     logging.info("Standardizing Training Data - Mu: {} and Sigma: {}".format(mu, sigma))
     logging.info("Training Data after Standartisation - Min: {} and Max {}".format(np.min(X_train), np.max(X_train)))
 
+    np.save('../data/X_train.npy', X_train)
+    np.save('../data/y_train.npy', y_train)
+
     imgs_test = []
     masks_test = []
     for data_obj in test_set:
@@ -88,6 +92,14 @@ def extract_and_normalize_data(train_set, test_set):
     X_test = (X_test - mu) / sigma
 
     logging.debug("TrainSet Size: {}, TestSet Size: {}".format(len(X_train), len(X_test)))
+
+    np.save('../data/X_val.npy', X_test)
+    np.save('../data/y_val.npy', y_test)
+
+    preprocess_info = {'mu': mu, 'sigma': sigma}
+
+    with open('../data/preprocess_info.json', 'w') as f:
+        json.dump(preprocess_info, f)
 
     return X_train, y_train, X_test, y_test
 
@@ -118,7 +130,8 @@ def fit(fold_nr, train_set, test_set, img_rows=96, img_cols=96, n_imgs=10 ** 4, 
     raw_model = UNet((img_rows, img_cols, 1), start_ch=8, depth=7, batchnorm=True, dropout=0.5, maxpool=True,
                      residual=True)
 
-    model = ModelMGPU(raw_model, 2)
+    # model = ModelMGPU(raw_model, 1)
+    model = raw_model
 
     model.summary(print_fn=logging.info)
     model_checkpoint = ModelCheckpoint(
@@ -137,7 +150,7 @@ def fit(fold_nr, train_set, test_set, img_rows=96, img_cols=96, n_imgs=10 ** 4, 
         validation_data=(X_test, y_test),
         callbacks=c_backs,
         workers=workers,
-        use_multiprocessing=True)
+        use_multiprocessing=False)
 
     logging.info(history.history)
     plot_learning_performance(history, 'loss-' + str(fold_nr) + '.png')
@@ -145,7 +158,7 @@ def fit(fold_nr, train_set, test_set, img_rows=96, img_cols=96, n_imgs=10 ** 4, 
 
 
 def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32, workers=1):
-    DATA_PATH = '/mnt/Data/mstypinski/Promise12/train'
+    DATA_PATH = '../data/train'
     data_list = load_data(DATA_PATH, img_rows, img_cols)
 
     seed = 42
@@ -174,6 +187,8 @@ def keras_fit_generator(img_rows=96, img_cols=96, n_imgs=10 ** 4, batch_size=32,
         logging.info("Test Set Names: {}".format(test_names))
 
         fit(fold_nr, train_set, test_set, img_rows, img_cols, n_imgs, batch_size, workers)
+
+    prepare_test_data('../data/test', img_rows, img_cols)
 
 
 def load_data(data_path, img_rows, img_cols):
@@ -206,11 +221,34 @@ def load_data(data_path, img_rows, img_cols):
     return data_list
 
 
+def prepare_test_data(path, img_rows, img_cols):
+    file_list = [os.path.join(path, f) for f in os.listdir(path)
+                 if f.endswith('.mhd') and '_segmentation' not in f]
+
+    images = []
+    n_imgs = []
+    for fname in sorted(file_list):
+        itkimg = sitk.ReadImage(fname)
+        imgs = img_resize(sitk.GetArrayFromImage(itkimg), img_rows, img_cols)
+        images.append(imgs)
+        n_imgs.append(len(imgs))
+
+    images = np.concatenate(images, axis=0).reshape(-1, img_rows, img_cols, 1)
+    images = smooth_images(images)
+
+    with open('../data/preprocess_info.json', 'r') as f:
+        preprocess_info = json.load(f)
+    images = (images - preprocess_info['mu']) / preprocess_info['sigma']
+
+    np.save('../data/X_test.npy', images)
+    np.save('../data/test_n_imgs.npy', n_imgs)
+
+
 if __name__ == '__main__':
     import time
     import os
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0, 3"
+    # os.environ["CUDA_VISIBLE_DEVICES"] = "0, 3"
 
     start_logging()
     start = time.time()

@@ -150,8 +150,12 @@ def plot_test_samples():
 
 
 def get_model(img_rows, img_cols):
+    dirname = '../data'
     model = UNet((img_rows, img_cols, 1), start_ch=8, depth=7, batchnorm=True, dropout=0.5, maxpool=True, residual=True)
-    model.load_weights('../data/weights.h5')
+    filename = [os.path.join(dirname, f) for f in os.listdir(dirname)
+                if f.startswith('weights') and f.endswith('.h5')]
+    filename = filename[0]
+    model.load_weights(filename)
     model.compile(optimizer=Adam(), loss=dice_coef_loss, metrics=[dice_coef])
     return model
 
