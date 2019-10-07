@@ -47,7 +47,20 @@ def read_and_return_niis(path):
     return niis
 
 
+def return_niis(path):
+    niis = {}
+    for fname in os.listdir(path):
+        if not (fname.endswith('.nii') or fname.endswith('.nii.gz')):
+            continue
+        fpath = os.path.join(path, fname)
+        niis[fpath] = nib.load(fpath)
+    return niis
+
+
 def img_resize(imgs, img_rows, img_cols, equalize=True):
+    if imgs.dtype == np.float:
+        imgs = (imgs - imgs.min()) / (imgs.max() - imgs.min())
+
     new_imgs = np.zeros([len(imgs), img_rows, img_cols])
     for mm, img in enumerate(imgs):
         if equalize:
@@ -60,8 +73,8 @@ def img_resize(imgs, img_rows, img_cols, equalize=True):
 
 
 def resize_pred_to_val(y_pred, shape):
-    row = shape[1]
-    col = shape[2]
+    row = shape[2]
+    col = shape[1]
 
     resized_pred = np.zeros(shape)
     for mm in range(len(y_pred)):
@@ -75,6 +88,7 @@ def predict(niis, img_rows, img_cols, mu, sigma):
     model = get_model(img_rows, img_cols)
 
     for fname in niis:
+        print("Predicting: {}".format(fname))
         nii = niis[fname]
         data = nii.get_data()
         # Flip from X, Y, Z to Z, Y, Z
@@ -101,15 +115,26 @@ def predict(niis, img_rows, img_cols, mu, sigma):
 
         prediction_nii = nib.Nifti1Image(prediction, nii.affine)
 
-        nii.to_filename(fname)
-        prediction_nii.to_filename(fname[:-6] + '_prediction.nii.gz')
+        if not os.path.exists(fname):
+            nii.to_filename(fname)
+        if fname.endswith('.nii.gz'):
+            name = fname[:-7]
+        else:
+            name = fname[:-4]
+        prediction_nii.to_filename(name + '_prediction.nii.gz')
 
 
 if __name__ == '__main__':
-    input_dir = '../data/test'
+    input_dir = '../train_data'
+    input_dir = '../papan_t2s'
+    read_mhd = False
+
     img_rows, img_cols = 128, 128
     mu, sigma = 0.4050441030286516, 0.23546992571535455
 
-    niis = read_and_return_niis(input_dir)
+    if read_mhd:
+        niis = read_and_return_niis(input_dir)
+    else:
+        niis = return_niis(input_dir)
 
     predict(niis, img_rows, img_cols, mu, sigma)
