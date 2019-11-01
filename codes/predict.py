@@ -14,7 +14,7 @@ from models import UNet
 
 def get_model(img_rows, img_cols):
     dirname = '../data'
-    model = UNet((img_rows, img_cols, 1), start_ch=8, depth=2, batchnorm=True,
+    model = UNet((img_rows, img_cols, 1), start_ch=8, depth=7, batchnorm=True,
                  dropout=0.5, maxpool=True, residual=True)
     filename = [os.path.join(dirname, f) for f in os.listdir(dirname)
                 if f.startswith('weights') and f.endswith('.h5')]
@@ -67,7 +67,7 @@ def img_resize(imgs, img_rows, img_cols, equalize=True):
             img = equalize_adapthist(img, clip_limit=0.05)
 
         new_imgs[mm] = cv2.resize(img, (img_rows, img_cols),
-                                  interpolation=cv2.INTER_NEAREST)
+                                  interpolation=cv2.INTER_LINEAR)
 
     return new_imgs
 
@@ -79,9 +79,24 @@ def resize_pred_to_val(y_pred, shape):
     resized_pred = np.zeros(shape)
     for mm in range(len(y_pred)):
         resized_pred[mm, :, :] = cv2.resize(y_pred[mm, :, :, 0], (row, col),
-                                            interpolation=cv2.INTER_NEAREST)
+                                            interpolation=cv2.INTER_LINEAR)
 
     return resized_pred
+
+
+def convert_to_lps(nii):
+    axcodes = ''.join(nib.aff2axcodes(nii.affine)).upper()
+    target = 'LPS'
+    ornt = []
+    for i in range(3):
+        if axcodes[i] != target[i]:
+            d = -1
+        else:
+            d = 1
+        ornt.append([i, d])
+    ornt = np.asarray(ornt)
+    nii = nii.as_reoriented(ornt)
+    return nii
 
 
 def predict(niis, img_rows, img_cols, mu, sigma):
@@ -90,6 +105,9 @@ def predict(niis, img_rows, img_cols, mu, sigma):
     for fname in niis:
         print("Predicting: {}".format(fname))
         nii = niis[fname]
+
+        nii = convert_to_lps(nii)
+
         data = nii.get_data()
         # Flip from X, Y, Z to Z, Y, Z
         data_T = data.T
@@ -103,7 +121,7 @@ def predict(niis, img_rows, img_cols, mu, sigma):
         assert (slices != 0).any()
         print(slices.sum())
 
-        prediction = model.predict(slices, verbose=1, batch_size=1)
+        prediction = model.predict(slices, verbose=1, batch_size=64)
         if prediction.sum() == 0:
             print('{}: all 0'.format(fname))
             continue
@@ -121,16 +139,17 @@ def predict(niis, img_rows, img_cols, mu, sigma):
             name = fname[:-7]
         else:
             name = fname[:-4]
-        prediction_nii.to_filename(name + '_prediction.nii.gz')
+        prediction_nii.to_filename(name + '_prediction_linear.nii.gz')
 
 
 if __name__ == '__main__':
     input_dir = '../train_data'
-    input_dir = '../papan_t2s'
-    read_mhd = False
+    # input_dir = '../papan_t2s'
+    # input_dir = '../data/test'
+    read_mhd = True
 
-    img_rows, img_cols = 128, 128
-    mu, sigma = 0.4050441030286516, 0.23546992571535455
+    img_rows, img_cols = 256, 256
+    mu, sigma = 0.4066714701720571, 0.24630037616823508
 
     if read_mhd:
         niis = read_and_return_niis(input_dir)

@@ -12,7 +12,7 @@ import json
 import logging
 from functools import partial
 
-from keras.callbacks import ModelCheckpoint
+from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras.losses import binary_crossentropy
 from keras.optimizers import Adam
 from skimage.exposure import equalize_adapthist
@@ -45,9 +45,7 @@ def img_resize(imgs, img_rows, img_cols, equalize=True):
     for mm, img in enumerate(imgs):
         if equalize:
             img = equalize_adapthist(img, clip_limit=0.05)
-
         new_imgs[mm] = cv2.resize(img, (img_rows, img_cols), interpolation=cv2.INTER_NEAREST)
-
     return new_imgs
 
 
@@ -137,20 +135,22 @@ def fit(fold_nr, train_set, test_set, img_rows=96, img_cols=96, n_imgs=10 ** 4, 
     model_checkpoint = ModelCheckpoint(
         '../data/weights-' + str(fold_nr) + '.h5', monitor='val_loss', save_best_only=True)
     metrics_callback = MetricsCallback(X_train, y_train, X_test, y_test, test_set)
+    
+    early_stopping = EarlyStopping(monitor='val_loss', mode='min', patience=3)
 
-    c_backs = [model_checkpoint, LoggingWriter(), metrics_callback]
+    c_backs = [model_checkpoint, LoggingWriter(), metrics_callback, early_stopping]
 
     model.compile(optimizer=Adam(lr=0.001), loss=binary_crossentropy, metrics=[dice_coef])
 
     history = model.fit_generator(
         training_sequence,
-        epochs=50,
+        epochs=70,
         verbose=1,
         shuffle=True,
         validation_data=(X_test, y_test),
         callbacks=c_backs,
         workers=workers,
-        use_multiprocessing=False)
+        use_multiprocessing=True)
 
     logging.info(history.history)
     plot_learning_performance(history, 'loss-' + str(fold_nr) + '.png')
@@ -253,7 +253,7 @@ if __name__ == '__main__':
     start_logging()
     start = time.time()
     keras_fit_generator(img_rows=256, img_cols=256,
-                        n_imgs=15 * 10 ** 4, batch_size=128, workers=16)
+                        n_imgs=7 * 10 ** 5, batch_size=64, workers=16)
 
     # 15 * 10 ** 4
 

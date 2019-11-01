@@ -253,7 +253,7 @@ if __name__ == '__main__':
     val_list = [5, 15, 25, 35, 45]
     train_list = list(set(range(50)) - set(val_list))
     train_list.sort()
-    check_predictions(val_list, plot=True)
-    check_predictions(train_list, plot=False)
+    # check_predictions(val_list, plot=True)
+    # check_predictions(train_list, plot=False)
     predict_test()
-    plot_test_samples()
+    # plot_test_samples()
